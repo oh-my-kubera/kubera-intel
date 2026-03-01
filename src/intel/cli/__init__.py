@@ -47,6 +47,9 @@ def main() -> None:
     collect_news = collect_sub.add_parser("news", help="Collect Naver news")
     collect_news.add_argument("--query", type=str, default=None, help="Custom search query")
 
+    collect_yt = collect_sub.add_parser("youtube", help="Collect YouTube videos")
+    collect_yt.add_argument("--query", type=str, default=None, help="Custom search query")
+
     # kubera-intel report
     report_parser = subparsers.add_parser("report", help="Generate reports")
     report_sub = report_parser.add_subparsers(dest="report_command")

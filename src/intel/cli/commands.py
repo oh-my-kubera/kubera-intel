@@ -151,8 +151,10 @@ def cmd_collect(args: argparse.Namespace) -> None:
         _cmd_collect_dart(args)
     elif args.collect_command == "news":
         _cmd_collect_news(args)
+    elif args.collect_command == "youtube":
+        _cmd_collect_youtube(args)
     else:
-        print("Usage: kubera-intel collect {dart,news}")
+        print("Usage: kubera-intel collect {dart,news,youtube}")
 
 
 def _cmd_collect_dart(args: argparse.Namespace) -> None:
@@ -231,6 +233,43 @@ def _cmd_collect_news(args: argparse.Namespace) -> None:
     out_path = data_dir() / f"news-{today}.json"
     out_path.write_text(json.dumps([vars(item) for item in all_items], ensure_ascii=False, indent=2))
     print(f"Collected {len(all_items)} news items -> {out_path}")
+
+
+def _cmd_collect_youtube(args: argparse.Namespace) -> None:
+    """Collect YouTube videos."""
+    import json
+    from datetime import date
+
+    from intel.core.collectors.youtube import YouTubeCollector
+    from intel.core.config import data_dir
+    from intel.core.credentials import get_credential
+    from intel.core.watchlist import load_watchlist
+
+    credential = get_credential("youtube")
+    if not credential:
+        print("Error: no YouTube credential. Run 'kubera-intel credential add youtube' first.")
+        sys.exit(1)
+
+    collector = YouTubeCollector(api_key=credential["api_key"])
+
+    if args.query:
+        queries = [args.query]
+    else:
+        watchlist = load_watchlist()
+        if not watchlist:
+            print("Error: watchlist is empty. Run 'kubera-intel watchlist add <CODE>' first.")
+            sys.exit(1)
+        queries = [item.get("name") or item["code"] for item in watchlist]
+
+    all_items = []
+    for query in queries:
+        items = collector.collect(query=query, max_results=10)
+        all_items.extend(items)
+
+    today = date.today().isoformat()
+    out_path = data_dir() / f"youtube-{today}.json"
+    out_path.write_text(json.dumps([vars(item) for item in all_items], ensure_ascii=False, indent=2))
+    print(f"Collected {len(all_items)} YouTube videos -> {out_path}")
 
 
 def cmd_report(args: argparse.Namespace) -> None:
