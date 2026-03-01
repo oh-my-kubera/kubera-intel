@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 
 from google import genai
 
 from intel.core.collectors import CollectedItem
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -51,8 +54,11 @@ KEY_POINTS:
 Data:
 {items_text}"""
 
+        logger.debug("Gemini analyze_items: %d items, prompt=%d chars", len(items), len(prompt))
         response = self.client.models.generate_content(model=self.model_name, contents=prompt)
-        return _parse_analysis(response.text, stock_code=items[0].stock_code)
+        result = _parse_analysis(response.text, stock_code=items[0].stock_code)
+        logger.info("Gemini analysis complete: sentiment=%s, key_points=%d", result.sentiment, len(result.key_points))
+        return result
 
     def generate_daily_brief(self, items: list[CollectedItem]) -> str:
         """Generate a daily market brief from all collected items. Returns markdown."""
@@ -84,7 +90,9 @@ Keep it concise (under 500 words).
 
 {items_text}"""
 
+        logger.debug("Gemini daily brief: %d items, prompt=%d chars", len(items), len(prompt))
         response = self.client.models.generate_content(model=self.model_name, contents=prompt)
+        logger.info("Gemini daily brief generated: %d chars", len(response.text))
         return response.text
 
 

@@ -59,6 +59,11 @@ def main() -> None:
 
     args = parser.parse_args()
 
+    # Setup logging early (before any command runs)
+    from intel.core.config import get_settings, setup_logging
+    settings = get_settings()
+    setup_logging(debug=settings.debug)
+
     if args.command == "credential":
         from intel.cli.commands import cmd_credential
         cmd_credential(args)

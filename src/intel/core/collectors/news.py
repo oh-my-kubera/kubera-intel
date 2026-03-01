@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from email.utils import parsedate_to_datetime
 
 import httpx
 
 from intel.core.collectors import CollectedItem
+
+logger = logging.getLogger(__name__)
 
 
 class NaverNewsCollector:
@@ -34,6 +37,8 @@ class NaverNewsCollector:
             "sort": sort,
         }
 
+        logger.debug("Naver news search: query=%s, max=%d", query, max_results)
+
         response = httpx.get(
             self.BASE_URL,
             headers=headers,
@@ -41,6 +46,7 @@ class NaverNewsCollector:
             timeout=10.0,
         )
         if response.status_code != 200:
+            logger.error("Naver API returned HTTP %d", response.status_code)
             return []
 
         data = response.json()
@@ -57,6 +63,7 @@ class NaverNewsCollector:
                     metadata={"query": query},
                 )
             )
+        logger.info("Naver news collected %d items for query=%s", len(items), query)
         return items
 
 

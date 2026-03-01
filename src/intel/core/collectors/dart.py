@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import date, timedelta
 
 import httpx
 
 from intel.core.collectors import CollectedItem
+
+logger = logging.getLogger(__name__)
 
 
 class DartCollector:
@@ -35,18 +38,21 @@ class DartCollector:
         if stock_code:
             params["stock_code"] = stock_code
 
+        logger.debug("DART API request: stock_code=%s, range=%s~%s", stock_code or "all", begin, end)
+
         response = httpx.get(
             f"{self.BASE_URL}/list.json",
             params=params,
             timeout=10.0,
         )
         if response.status_code != 200:
+            logger.error("DART API returned HTTP %d", response.status_code)
             return []
 
         data = response.json()
         status = data.get("status")
         if status != "000":
-            # "013" = no data, others = error
+            logger.info("DART API status=%s (013=no data)", status)
             return []
 
         items = []
@@ -68,6 +74,7 @@ class DartCollector:
                     },
                 )
             )
+        logger.info("DART collected %d items", len(items))
         return items
 
 

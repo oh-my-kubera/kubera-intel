@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import date
 from pathlib import Path
 
@@ -9,6 +10,8 @@ from intel.core.analyzer.gemini import GeminiAnalyzer
 from intel.core.collectors import CollectedItem
 from intel.core.config import reports_dir
 from intel.core.reporter.templates import stock_report_template
+
+logger = logging.getLogger(__name__)
 
 
 class StockReporter:
@@ -38,4 +41,5 @@ class StockReporter:
 
         out_path = reports_dir() / f"stock-{stock_code}-{today}.md"
         out_path.write_text(content, encoding="utf-8")
+        logger.info("Stock report saved: %s (sentiment=%s)", out_path, analysis.sentiment)
         return out_path
