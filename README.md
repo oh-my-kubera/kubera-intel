@@ -31,12 +31,24 @@ kubera-intel report daily
 kubera-intel report stock 005930
 ```
 
-## Cron Example
+## Cron Setup (GCP)
+
+See `crontab.example` for the full schedule. Install with:
 
 ```bash
-# Daily at 7am KST
-0 7 * * * cd /home/user/kubera-intel && kubera-intel collect dart && kubera-intel collect news && kubera-intel report daily
+crontab crontab.example
 ```
+
+Schedule (KST, weekdays only):
+
+| Time | Job |
+|------|-----|
+| 08:30 | Collect DART disclosures |
+| 08:35 | Collect Naver news |
+| 09:00 | Generate daily morning report |
+| 14:00 | Refresh news |
+| 15:45 | Collect DART + news (final) |
+| 16:00 | Generate market close report |
 
 ## License
 

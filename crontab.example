@@ -1,0 +1,22 @@
+# kubera-intel cron schedule (KST = UTC+9)
+# Install: crontab crontab.example
+# Prereq: kubera-intel installed, credentials configured, watchlist set
+
+SHELL=/bin/bash
+PATH=/home/user/.local/bin:/usr/local/bin:/usr/bin:/bin
+INTEL_DIR=/home/user/kubera-intel
+
+# Morning collection (08:30 KST = 23:30 UTC previous day)
+30 23 * * 0-4 cd $INTEL_DIR && kubera-intel collect dart >> .intel/cron.log 2>&1
+35 23 * * 0-4 cd $INTEL_DIR && kubera-intel collect news >> .intel/cron.log 2>&1
+
+# Morning report (09:00 KST = 00:00 UTC)
+0 0 * * 1-5 cd $INTEL_DIR && kubera-intel report daily >> .intel/cron.log 2>&1
+
+# Afternoon news refresh (14:00 KST = 05:00 UTC)
+0 5 * * 1-5 cd $INTEL_DIR && kubera-intel collect news >> .intel/cron.log 2>&1
+
+# Market close report (15:45 KST = 06:45 UTC)
+45 6 * * 1-5 cd $INTEL_DIR && kubera-intel collect dart >> .intel/cron.log 2>&1
+50 6 * * 1-5 cd $INTEL_DIR && kubera-intel collect news >> .intel/cron.log 2>&1
+0 7 * * 1-5 cd $INTEL_DIR && kubera-intel report daily --market-close >> .intel/cron.log 2>&1
