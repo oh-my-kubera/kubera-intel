@@ -157,21 +157,47 @@ def cmd_collect(args: argparse.Namespace) -> None:
         print("Usage: kubera-intel collect {dart,news,youtube}")
 
 
-def _cmd_collect_dart(args: argparse.Namespace) -> None:
-    """Collect DART disclosures."""
+def _save_collected(items: list, source: str) -> None:
+    """Save collected items to a dated JSON file."""
     import json
-    from datetime import date, timedelta
+    from datetime import date
 
-    from intel.core.collectors.dart import DartCollector
     from intel.core.config import data_dir
+
+    today = date.today().isoformat()
+    out_path = data_dir() / f"{source}-{today}.json"
+    out_path.write_text(json.dumps([vars(item) for item in items], ensure_ascii=False, indent=2))
+    print(f"Collected {len(items)} {source} items -> {out_path}")
+
+
+def _require_credential(provider: str) -> dict:
+    """Get credential or exit with helpful message."""
     from intel.core.credentials import get_credential
+
+    credential = get_credential(provider)
+    if not credential:
+        print(f"Error: no {provider} credential. Run 'kubera-intel credential add {provider}' first.")
+        sys.exit(1)
+    return credential
+
+
+def _get_watchlist_queries() -> list[str]:
+    """Get search queries from watchlist or exit."""
     from intel.core.watchlist import load_watchlist
 
-    credential = get_credential("dart")
-    if not credential:
-        print("Error: no DART credential. Run 'kubera-intel credential add dart' first.")
+    watchlist = load_watchlist()
+    if not watchlist:
+        print("Error: watchlist is empty. Run 'kubera-intel watchlist add <CODE>' first.")
         sys.exit(1)
+    return [item.get("name") or item["code"] for item in watchlist]
 
+
+def _cmd_collect_dart(args: argparse.Namespace) -> None:
+    """Collect DART disclosures."""
+    from intel.core.collectors.dart import DartCollector
+    from intel.core.watchlist import load_watchlist
+
+    credential = _require_credential("dart")
     collector = DartCollector(api_key=credential["api_key"])
 
     if args.stock:
@@ -185,91 +211,44 @@ def _cmd_collect_dart(args: argparse.Namespace) -> None:
 
     all_items = []
     for code in codes:
-        items = collector.collect(stock_code=code)
-        all_items.extend(items)
+        all_items.extend(collector.collect(stock_code=code))
 
-    today = date.today().isoformat()
-    out_path = data_dir() / f"dart-{today}.json"
-    out_path.write_text(json.dumps([vars(item) for item in all_items], ensure_ascii=False, indent=2))
-    print(f"Collected {len(all_items)} DART items -> {out_path}")
+    _save_collected(all_items, "dart")
 
 
 def _cmd_collect_news(args: argparse.Namespace) -> None:
     """Collect Naver news."""
-    import json
-    from datetime import date
-
     from intel.core.collectors.news import NaverNewsCollector
-    from intel.core.config import data_dir, get_settings
-    from intel.core.credentials import get_credential
-    from intel.core.watchlist import load_watchlist
+    from intel.core.config import get_settings
 
-    credential = get_credential("naver")
-    if not credential:
-        print("Error: no Naver credential. Run 'kubera-intel credential add naver' first.")
-        sys.exit(1)
-
+    credential = _require_credential("naver")
     settings = get_settings()
     collector = NaverNewsCollector(
         client_id=credential["client_id"],
         client_secret=credential["client_secret"],
     )
 
-    if args.query:
-        queries = [args.query]
-    else:
-        watchlist = load_watchlist()
-        if not watchlist:
-            print("Error: watchlist is empty. Run 'kubera-intel watchlist add <CODE>' first.")
-            sys.exit(1)
-        queries = [item.get("name") or item["code"] for item in watchlist]
-
+    queries = [args.query] if args.query else _get_watchlist_queries()
     all_items = []
     for query in queries:
-        items = collector.collect(query=query, max_results=settings.naver_max_results)
-        all_items.extend(items)
+        all_items.extend(collector.collect(query=query, max_results=settings.naver_max_results))
 
-    today = date.today().isoformat()
-    out_path = data_dir() / f"news-{today}.json"
-    out_path.write_text(json.dumps([vars(item) for item in all_items], ensure_ascii=False, indent=2))
-    print(f"Collected {len(all_items)} news items -> {out_path}")
+    _save_collected(all_items, "news")
 
 
 def _cmd_collect_youtube(args: argparse.Namespace) -> None:
     """Collect YouTube videos."""
-    import json
-    from datetime import date
-
     from intel.core.collectors.youtube import YouTubeCollector
-    from intel.core.config import data_dir
-    from intel.core.credentials import get_credential
-    from intel.core.watchlist import load_watchlist
 
-    credential = get_credential("youtube")
-    if not credential:
-        print("Error: no YouTube credential. Run 'kubera-intel credential add youtube' first.")
-        sys.exit(1)
-
+    credential = _require_credential("youtube")
     collector = YouTubeCollector(api_key=credential["api_key"])
 
-    if args.query:
-        queries = [args.query]
-    else:
-        watchlist = load_watchlist()
-        if not watchlist:
-            print("Error: watchlist is empty. Run 'kubera-intel watchlist add <CODE>' first.")
-            sys.exit(1)
-        queries = [item.get("name") or item["code"] for item in watchlist]
-
+    queries = [args.query] if args.query else _get_watchlist_queries()
     all_items = []
     for query in queries:
-        items = collector.collect(query=query, max_results=10)
-        all_items.extend(items)
+        all_items.extend(collector.collect(query=query, max_results=10))
 
-    today = date.today().isoformat()
-    out_path = data_dir() / f"youtube-{today}.json"
-    out_path.write_text(json.dumps([vars(item) for item in all_items], ensure_ascii=False, indent=2))
-    print(f"Collected {len(all_items)} YouTube videos -> {out_path}")
+    _save_collected(all_items, "youtube")
 
 
 def cmd_report(args: argparse.Namespace) -> None:
