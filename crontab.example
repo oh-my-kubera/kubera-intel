@@ -20,3 +20,6 @@ INTEL_DIR=/home/user/kubera-intel
 45 6 * * 1-5 cd $INTEL_DIR && kubera-intel collect dart >> .intel/cron.log 2>&1
 50 6 * * 1-5 cd $INTEL_DIR && kubera-intel collect news >> .intel/cron.log 2>&1
 0 7 * * 1-5 cd $INTEL_DIR && kubera-intel report daily --market-close >> .intel/cron.log 2>&1
+
+# Weekly cleanup (Sunday 03:00 KST = Saturday 18:00 UTC)
+0 18 * * 6 cd $INTEL_DIR && kubera-intel cleanup >> .intel/cron.log 2>&1

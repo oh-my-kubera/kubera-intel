@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     naver_max_results: int = 20
     gemini_model: str = "gemini-2.0-flash"
     report_lang: str = "ko"
+    retention_days: int = 30
     debug: bool = False
 
 

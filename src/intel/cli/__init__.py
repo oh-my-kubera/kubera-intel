@@ -57,6 +57,10 @@ def main() -> None:
     report_stock = report_sub.add_parser("stock", help="Generate stock deep dive report")
     report_stock.add_argument("code", type=str, help="Stock code (e.g. 005930)")
 
+    # kubera-intel cleanup
+    cleanup_parser = subparsers.add_parser("cleanup", help="Delete old data and reports")
+    cleanup_parser.add_argument("--days", type=int, default=None, help="Retention days (default: INTEL_RETENTION_DAYS or 30)")
+
     args = parser.parse_args()
 
     # Setup logging early (before any command runs)
@@ -76,5 +80,10 @@ def main() -> None:
     elif args.command == "report":
         from intel.cli.commands import cmd_report
         cmd_report(args)
+    elif args.command == "cleanup":
+        from intel.core.cleanup import cleanup_old_files
+        days = args.days if args.days is not None else settings.retention_days
+        deleted = cleanup_old_files(retention_days=days)
+        print(f"Cleanup complete: {deleted} file(s) deleted (retention: {days} days)")
     else:
         parser.print_help()
